@@ -24,6 +24,23 @@
     - [grep 的参数](#grep-的参数)
     - [grep 的一些例子](#grep-的一些例子)
     - [grep练习](#grep练习)
+- [git](#git)
+  - [学习的文档](#学习的文档)
+  - [git的初始化](#git的初始化)
+  - [git的提交](#git的提交)
+  - [git的文本管理](#git的文本管理)
+  - [工作区和暂存区](#工作区和暂存区)
+  - [恢复文件的几种情况](#恢复文件的几种情况)
+  - [github远程仓库的使用](#github远程仓库的使用)
+  - [git分支](#git分支)
+    - [分支的基本操作](#分支的基本操作)
+    - [分支的合并冲突](#分支的合并冲突)
+    - [内容的储存](#内容的储存)
+    - [远程仓库的分支问题](#远程仓库的分支问题)
+  - [关于标签tag](#关于标签tag)
+  - [忽略特殊文件](#忽略特殊文件)
+  - [配置别名](#配置别名)
+  - [搭建私有git服务器](#搭建私有git服务器)
 # Linux 基础
 
 ---
@@ -689,3 +706,263 @@ cat /etc/passwd |grep nologin|wc -l
 ```sh
 echo -e '19205541664\n23406513341\n1234556234' | grep -E '^1[0-9]{10}'
 ```
+# git
+## 学习的文档
+[廖雪峰的git教程](廖雪峰Git教程.pdf)
+## git的初始化
+在一个目录下，输入 `git  init`   可以把这个目录变成代码仓库 
+```sh
+git config --global user.email "you@example.com" 
+
+git config --global user.name "Your Name" 
+```
+- 先告诉git你是谁，以及你的邮箱，因为修改记录要被记录 
+```sh
+git config --global color.ui true 
+```
+- 高亮提示 
+## git的提交
+下面在git目录下创建一个文件 `Vim readme.txt` 
+
+写下两句 
+```text
+Git is a version contral systerm 
+Git is a free software
+``` 
+然后`git add readme.txt ` 
+- 如果后面加上 ‘ . ’ 这样就会添加所有文件,添加到git仓库，但是没有任何消息，就该这样 
+- 然后 git commit -m "wrote a readme",告诉git可以提交了，并且加上说明文字 
+```sh
+[master (root-commit) 727d8f8] wrote a readme 
+ 1 file changed, 2 insertions(+) 
+ create mode 100644 readme.txt 
+```
+> Git 告诉你一个文件被更改，插入了两行，创建了一个readme.txt文件，文本文件是可以被检测到的，版本控制的正是这些文本文件 
+- 可以分多次add，然后一次性commit  
+## git的文本管理
+接下里修改文件，把第一行改成 
+```sh
+Git is a distributed version control system. 
+```
+然后运行`git status `
+```sh
+On branch master 
+Changes not staged for commit: 
+  (use "git add <file>..." to update what will be committed) 
+  (use "git checkout -- <file>..." to discard changes in working directory) 
+modified:   readme.txt 
+no changes added to commit (use "git add" and/or "git commit -a") 
+```
+- 他告诉我，有个文件被修改了，但是没有被提交 
+我们可以看看，具体修改了啥 `Git diff read.txt `
+``sh
+diff --git a/readme.txt b/readme.txt 
+index 3bf962e..db4c41b 100644 
+--- a/readme.txt 
++++ b/readme.txt 
+@@ -1,2 +1,2 @@ 
+-Git is version control sysytem 
++Git is distributed version control sysytem 
+ Git is free software 
+```
+- 就是阅读模式的告诉你修改了哪些内容，按q退出 
+然后我们添加文件到暂存区，`git add readme.txt` 
+
+再看一下`git status `
+```sh
+On branch master 
+Changes to be committed: 
+  (use "git reset HEAD <file>..." to unstage) 
+modified:   readme.txt 
+```
+- 告诉我们，文件准备好被提交了 
+然后我们提交 `Git commit -m "changed the first line"` 
+
+再来看下 `git status `
+```sh
+On branch master 
+nothing to commit, working tree clean 
+```
+- 告诉我们，没有文件要被提交 
+使用`git log`可以看到提交的历史 
+```sh
+commit 37101d7ac60be724fc37a70509dea5f4068a32e8(HEAD -> master) 
+Author: keri <mrdayong1626@gmail.com> 
+Date:   Fri Mar 13 21:43:01 2020 +0800 
+    changed the first line 
+commit 727d8f8ddcdf166cffbb521a12a32e147a3f06d7 
+Author: keri <mrdayong1626@gmail.com> 
+Date:   Fri Mar 13 21:12:12 2020 +0800 
+    wrote a readme 
+```
+- 可以看到详细信息，commit后面的是SHA1算出来独一无二的十六进制编码 
+如果感觉信息太多，就可用 `git log --pretty=oneline` 
+```sh
+37101d7ac60be724fc37a70509dea5f4068a32e8(HEAD -> master) changed the first line 
+727d8f8ddcdf166cffbb521a12a32e147a3f06d7 wrote a readme 
+```
+- 然后git可以回退版本，HEAD表示当前版本 
+> 上个版本是`HEAD^` ,上上个是`HEAD^^`,上一百个是`HEAD~100`
+回到上个版本用命令 `git reset --hard HEAD^ `
+- 再用`cat readme.txt`看一下内容是否被修改了，结果应该是肯定的 
+> 但是我们看下 `git log `,我们之前的那个最新版本不见了，那我不是白做了， 其实是可以回去的，刚才那个查询历史的窗口没关，那么我们就可以早前那版本号， `git reset --hard XXXX` 就恢复了。
+- 版本写上前几位就好了
+- 如果电脑已经关了或者之前没有查看版本历史，没关系 我们可以用 `git reflog`，可以查看之前的命令记录，这样就可看到版本号了 
+## 工作区和暂存区
+- 那个写文件的目录就是工作区，还有一个隐藏文件夹.git，成为版本库，里面有（stage）index就是暂存区 
+- 里面还有一个主分支master，和指向master的head（指针）
+>- git add就是把写好的文件交到index暂存区里， 
+>- git commit就是把index里所有的文件都交到maser里,并且更新指针head 
+如果修改了文件，然后add，之后没有提交之前又修改了工作区的文件，之后commit，那么提交到版本库里修改是第一次的修改，因为第二次的修改没有被提交到工作区里.
+## 恢复文件的几种情况
+现在假如你写错一些内容，有以下几个情况 
+1. 只是在工作区有修改，没有任何提交操作 
+>可以手动修改，或者用 `git checkout -- readme.txt `
+- 这个命令是让工作区文件回到最近一次版本库或者暂存区的修改,既然暂存区没有文件，就回到和版本库一样的状态 
+2. 你已经提交到了暂存区 
+   1. 可以手动修改，然后用add操作更新修改,
+   2. 用`git reset HEAD readme.txt`来撤销暂存区（`git restore --staged readme.txt`也可以撤销）
+   3. 我们可以用`git status`来看下,这个时候再用`git checkout --readme.txt`就可以回到版本库的那个状态了 
+3. 如果你已经到了本地版本库，未提交到远程仓库 
+那么你可以用版本回退，git reset  XXX 
+>(git)rm readme.txt 可以删除本地文件 
+>`git status`就会告诉你版本库和本地文件不一致 
+>这个时候你可以`git commit -m "XXX"`来提交删除操作 
+## github远程仓库的使用 
+- 先注册一个github账号，然后终端输入`ssh-keygen -t rsa -C "XXX@gmail.com"` 生成ssh密钥
+然后到复制~/.ssh/id_rsa.pub的内容 ，也就是公钥内容
+- 来到github，打开“Account settings”，“SSH Keys”页面，点“Add SSH Key”，填上任意Title，在Key文本框里粘贴id_rsa.pub文件的内容 
+> github仓库文件内容都是公开的，要么买交钱建立私有仓库，要么自己搭建git服务 
+- 添加github远程库和推送内容,在github右上角加号处，new repository,名称learngit和相关说明 
+> Initialize this repository with a README，这样GitHub会自动为我们创建一个README.md文件，但是我们本地有readme要推送，就不勾选，下次先创建远程库的时候，就可以用，直接clone下来修改 
+然后选择ssh，https速度较慢，每次还有输密码，但是当git服务器没有开放ssh端口时，那么就只能用https
+- 在工作区执行以下内容来绑定远程仓库
+`git remote add origin git@github.com:keri-david/learngit.git `
+- 用`git push -u origin master`就会把内容推上去了
+> 由于远程库是空的，我们第一次推送master分支时，加上了-u参数，Git不但会把本地的master分支内容推送的远程新的master分支，还会把本地的master分支和远程的master分支关联起来,下次就用`git push origin master`来推送内容 
+- 可以用`git clone git@github.com:keri-david/learngit.git`来从远程来拉取文件到本地 
+## git分支
+- git的分支作用，比如在开发一个新功能，但是没有完成，那么可以创建一个自己的分支， 这时就可以吧主分支推上去，让别人先干其他活，等到开发完成，在和主分支合并，就十分有效率 
+> 创建git分支实际上就是创建一个新的指针，指向之前master的最新版本，然后HEAD指针又指向这个新创建的指针，然后每次提交都是这个新的分支在向前，如果想要合并，那么就可以吧Master指向新指针的当前提交，所以速度十分快 
+### 分支的基本操作
+- 创建
+`git branch dev` 
+- 切换
+`git checkout dev` 
+
+也可以用一条命令 `git checkout -b dev` 创建并切换到dev分支 
+
+`git branch`可以列出所有分支，并在当前分支前加 * 号 
+
+>我们可以对readme.txt稍作修改，然后add、commit之后，切换到主分支上查看发现分支上修改的内容并没有在master上出现 因为master分支还指向之前的版本
+
+用`git merge dev`把dev分支合并到master,如果不需要那个分支可以用`git branch -d dev`来删除这个分支，如果不想合并就删除，用-D参数.
+
+那如果我们想把dev分支提交到github上 `git push origin dev` 
+
+`git branch -a查看本地和远程的所有分支 
+
+可以用git push origin --delete dev来删除远程仓库的分支 
+### 分支的合并冲突
+当合并分支时，如果出现冲突，就会报错，而且在冲突的文件处加上标记，此时我们只能手动去修改，然后在提交。 
+
+用`git log --graph --pretty=oneline --abbrev-commit`来显示分支情况 
+```sh
+*   dd2a29d (HEAD -> master) merge a new branch - dev 
+|\ 
+| * 007e8a7 (dev) creat a new branch - dev 
+* | f73303d creat a new branch - dev 
+* | 502a0ee merge a new branch - dev 
+|/ 
+* 8be2337 creat a new branch - dev 
+* 3531e4c creat a new branch - dev 
+```
+>如果用fast forward来快速合并分支时，不会有合并分支的历史，在实际开发中，我们不希望看到这样的结果，所以一般禁用 fast forward 
+`git merge --no-ff -m "merge with no-ff" dev` 这样就会形成一个新的commit，git log 也会显示成这样 
+```sh
+$ git log --graph --pretty=oneline --abbrev-commit 
+* e1e9c68 (HEAD -> master) merge with no-ff 
+|\ 
+| * f52c633 (dev) add merge 
+|/ 
+* cf810e4 conflict fixed 
+```
+### 内容的储存 
+假设正在dev分支上写一个功能，然后临时需要切换到其他分支改一个bug，我们可以用stash功能把现在的内容储存起来，git status是也不会出现没提交的情况，命令就是`git stash`，
+
+改好之后，可以用`git stash apply`来恢复，但是stash的储存还在，可以用`git stash drop`来删除，也可以用一个命令，恢复的时候删除stash，`git stash pop` 
+
+同时也可以多次stash，然后用`git stash list`来查看所有stash，然后用`git stash apply stash@{X}`来恢复工作区的内容 
+### 远程仓库的分支问题
+在一个工作区想要查看远程仓库的信息，可以用命令`git remote -v `，git clone XXX下来的版本，默认只能看到master分区，想要开发的话，可以在本地创建dev分支然后提交到远程仓库`git push origin dev` 
+
+如果此时还有一个人已经提交了和你一样名称的文件，而且有冲突，无法合并，这时可以用pull把代码抓到本地来进行合并，再提交。 
+
+**具体操作** 
+
+>`git branch --set-upstream-to=origin/dev dev`制定远程分支和本地分支进行连接，然后 git pull在本地修改好冲突之后再add、commit、push来提交,在push之前，如果觉得分支合并修改的曲线很难看，那么可以用命令`git rebase`俗称"变基"
+提交曲线就会变成一条直线，原理是基于远程库的修改来记录 
+
+## 关于标签tag 
+- 就是一个指向commit的指针，当成一个分支的快照，可以回退,那为啥不用换commit呢，因为commit的数字随机，没有意义 
+- 切换到想要他标签的分支,`git tag v.0.1`，就这样此时这个分支就有一个标签快照了 
+- 如果想给之前提交的版本打上标签,可以用`git log`查看那个版本的commit号码,然后`git tag v0.0 XXX`,打好之后，可以直接git show v0.0来查看标签信息 
+- 类似的，删除用git tag -d v0.0 
+- 推送标签到远程，`git push origin v0.0`,也可一次性推送所有被推送的标签`git push origin --tags`
+- 如果要删除远程仓库的标签,先把本地的删除之后，再`git push origin :refs/tags/v0.0` 
+## 忽略特殊文件
+- 比如操作系统、编译器等自动生成或者自己不想提交的文件，在工作区更目录写文件‘.gitignore’，然后提交这个文件 
+[gitignore模板](https://github.com/github/gitignore)
+```sh
+#添加自己的配置 
+My configurations: 
+db.ini 
+deploy_key_rsa 
+```
+> 如果，在添加到文件之前，那个文件已经被git追踪过，那么该文件是任然会被提交修改的，可以用命令`git rm --cached XXX` 
+如果文件在 .gitignore 中，还是想要提交的话`git add -f XXX`,或者找到忽略那个配置`git check-ignore XXX`然后修改文件，重新提交 
+## 配置别名
+有没有经常敲错命令？比如git status？status这个单词真心不好记。如果敲git st就表示git status那就简单多了，我们只需要敲一行命令，告诉Git，以后st就表示status： 
+```sh
+$ git config --global alias.st status 
+```
+--global 对当前用户起作用，如果不加，就仅仅这个仓库起作用 
+> - 用户配置文件在家目录 .gitconfig 
+> - 仓库配置文件在 ./git/config文件中 
+## 搭建私有git服务器 
+假设你已经有sudo权限的用户账号，下面，正式开始安装。 
+1. 安装git： 
+```sh
+$ sudo apt-get install git 
+```
+2. 创建一个git用户，用来运行git服务： 
+```sh
+$ sudo adduser git 
+```
+3. 创建证书登录
+收集所有需要登录的用户的公钥，就是他们自己的id_rsa.pub文件，把所有公钥导入到/home/git/.sshauthorized_keys文件里，一行一个。 
+4. 初始化Git仓库： 
+先选定一个目录作为Git仓库，假定是/srv/sample.git，在/srv目录下输入命令： 
+```sh
+$ sudo git init --bare sample.git 
+```
+Git就会创建一个裸仓库，裸仓库没有工作区，因为服务器上的Git仓库纯粹是为了共享，所以不让用户直接登录到服务器上去改工作区，并且服务器上的Git仓库通常都以.git结尾。然后，把owner改为git： 
+```sh
+$ sudo chown -R git:git sample.git 
+```
+5. 禁用shell登录
+出于安全考虑，第二步创建的git用户不允许登录shell，这可以通过编辑/etc/passwd文件完成。找到类似下面的一行： 
+```sh
+git:x:1001:1001:,,,:/home/git:/bin/bash 
+改为： 
+git:x:1001:1001:,,,:/home/git:/usr/bin/git-shell 
+这样，git用户可以正常通过ssh使用git，但无法登录shell，因为我们为git用户指定的git-shell每次一登录就自动退出。 
+```
+6. 克隆远程仓库
+现在，可以通过git clone命令克隆远程仓库了，在各自的电脑上运行： 
+```sh
+$ git clone git@server:/srv/sample.git 
+Cloning into 'sample'... 
+warning: You appear to have cloned an empty repository. 
+```
+剩下的推送就简单了。 
